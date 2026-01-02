@@ -1,6 +1,11 @@
 import mongoose from "mongoose";
 
 const inviteSchema = new mongoose.Schema({
+    boardId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Board",
+        required: true,
+    },
     companyId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Company",

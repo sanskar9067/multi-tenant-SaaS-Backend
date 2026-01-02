@@ -4,9 +4,10 @@ import User from "../models/user.model.js";
 import client from "../utils/redisClient.js";
 //import transporter from "../utils/nodemailer.js";
 
-const generateTokens = (userId) => {
-    const accessToken = jwt.sign({ userId }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "15m" });
-    const refreshToken = jwt.sign({ userId }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
+const generateTokens = async(userId) => {
+    const payload = await User.findById(userId).select("-password");
+    const accessToken = jwt.sign({ userId: payload._id, name: payload.name, email: payload.email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "7d" });
+    const refreshToken = jwt.sign({ userId: payload._id, name: payload.name, email: payload.email }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
     return { accessToken, refreshToken };
 };
 
@@ -140,29 +141,19 @@ export const loginUser = async(req, res) => {
             return res.status(400).json({ success: false, message: "Invalid email or password." });
         }
 
-        const {accessToken, refreshToken} = generateTokens(user._id);
+        const {accessToken, refreshToken} = await generateTokens(user._id);
 
         user.refreshToken = refreshToken;
         await user.save();
 
         res.status(200)
-        .cookie("refreshToken", refreshToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "Strict",
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-        })
-        .cookie("accessToken", accessToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "Strict",
-            maxAge: 15 * 60 * 1000 // 15 minutes
-        })
+        .cookie("refreshToken", refreshToken)
+        .cookie("accessToken", accessToken)
         .json({
             success: true,
             message: "Login successful.",
-            accessToken,
-            refreshToken,
+            accessToken: accessToken,
+            refreshToken: refreshToken,
             user: {
                 id: user._id,
                 name: user.name,
@@ -177,4 +168,16 @@ export const loginUser = async(req, res) => {
 
 export const test = (req, res) => {
     res.status(200).json({ success: true, message: "Auth route is working!" });
+}
+
+export const logoutUser = async(req, res) => {
+    try {
+        const { userId } = req.user;
+        res.clearCookie("refreshToken");
+        res.clearCookie("accessToken");
+        res.status(200).json({ success: true, message: "Logout successful." });
+    } catch (error) {
+        console.error("Error in logoutUser:", error);
+        res.status(500).json({ success: false, message: "Server Error" });
+    }
 }

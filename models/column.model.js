@@ -10,7 +10,7 @@ const columnSchema = new mongoose.Schema({
         ref: "Board",
         required: true,
     },
-    name: {
+    status: {
         type: String,
         required: true,
         enum: ["To Do", "In Progress", "Done"],

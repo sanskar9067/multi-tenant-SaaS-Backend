@@ -9,10 +9,17 @@ const taskSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    columnId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Column",
+    status: {
+        type: String,
         required: true,
+        enum: ["To Do", "In Progress", "Done"],
+        default: "To Do"
+    },
+    priority: {
+        type: String,
+        required: true,
+        enum: ["Low", "Medium", "High", "Urgent"],
+        default: "Low"
     },
     boardId: {
         type: mongoose.Schema.Types.ObjectId,

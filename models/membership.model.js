@@ -11,6 +11,11 @@ const membershipSchema = new mongoose.Schema({
         ref: "Company",
         required: true,
     },
+    boardId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Board",
+        required: false,
+    },
     role: {
         type: String,
         enum: ["owner", "manager", "member"],

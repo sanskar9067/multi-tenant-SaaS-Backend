@@ -5,6 +5,8 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import authRouter from "./routes/auth.routes.js";
 import companyRouter from "./routes/company.routes.js";
+import boardRouter from "./routes/board.routes.js";
+import taskRouter from "./routes/task.routes.js";
 
 dotenv.config();
 
@@ -19,6 +21,8 @@ app.use(cookieParser());
 
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/company", companyRouter);
+app.use("/api/v1/board", boardRouter);
+app.use("/api/v1/task", taskRouter);
 
 app.get("/", (req, res) => {
   res.send("Welcome to the SaaS Backend!");
