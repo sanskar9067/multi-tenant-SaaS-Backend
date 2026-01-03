@@ -4,8 +4,7 @@ import Membership from "../models/membership.model.js";
 
 export const createBoard = async (req, res) => {
     try {
-        const { name } = req.body;
-        const companyId = req.params.companyId;
+        const { name , companyId} = req.body;
         const createdBy = req.user._id;
 
         const board = await Board.create({ name, companyId, createdBy });
@@ -65,5 +64,36 @@ export const respondToInvite = async(req, res) => {
     } catch (error) {
         console.error("Error in respondToInvite:", error);
         return res.status(500).json({ success: false, message: "Failed to respond to invite", error });
+    }
+}
+
+export const getBoardByUser = async(req, res) => {
+    try {
+        const userId = req.user._id
+        const response = await Board.find({createdBy: userId});
+        if(response){
+            return res.status(200).json({
+                success: true,
+                message: "Boards fetched successfully",
+                data: response
+            })
+        }
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        })
+    }
+}
+
+export const getBoardById = async(req, res) => {
+    try {
+        const boardId = req.params.boardId;
+        const board = await Board.findById(boardId).populate('createdBy').populate('companyId');
+        return res.status(200).json({ success: true, message: "Board fetched successfully", data: board });
+    } catch (error) {
+        console.error("Error in getBoardById:", error);
+        return res.status(500).json({ success: false, message: "Failed to get board", error });
     }
 }

@@ -3,9 +3,11 @@ import Membership from "../models/membership.model.js";
 const verifyOwnerMiddleware = async (req, res, next) => {
     try {
         const {companyId} = req.body;
-        const userId = req.user._id;
-
-        const membership = await Membership.findOne({ userId, companyId });
+        const userId = req.user._id.toString();
+        console.log("userId", userId)
+        console.log("companyId", companyId)
+        const membership = await Membership.findOne({ userId, companyId});
+        console.log("membership", membership)
         if (!membership || membership.role !== "owner") {
             return res.status(403).json({ success: false, message: "Access denied. Owner role required." });
         }
