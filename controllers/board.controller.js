@@ -1,6 +1,8 @@
 import Board from "../models/board.model.js";
 import Invite from "../models/invites.model.js";
 import Membership from "../models/membership.model.js";
+import Task from "../models/task.model.js";
+import User from "../models/user.model.js";
 
 export const createBoard = async (req, res) => {
     try {
@@ -16,22 +18,43 @@ export const createBoard = async (req, res) => {
 
 export const inviteMember = async(req, res) => {
     try {
-        const { userId, role, companyId } = req.body;
+        const { email, userId, role, companyId } = req.body;
         const boardId = req.params.boardId;
         const invitedBy = req.user._id;
+
+        let invitedToUserId = userId;
+
+        // If email is provided instead of userId, look up the user
+        if (email && !userId) {
+            const user = await User.findOne({ email: email.toLowerCase().trim() });
+            if (!user) {
+                return res.status(404).json({ 
+                    success: false, 
+                    message: "User with this email address not found. Please ensure the user has an account." 
+                });
+            }
+            invitedToUserId = user._id;
+        }
+
+        if (!invitedToUserId) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Either email or userId must be provided" 
+            });
+        }
 
         const invite = new Invite({
             boardId,
             companyId,
-            invitedTo: userId,
+            invitedTo: invitedToUserId,
             invitedBy,
-            role,
+            role: role || 'member',
         });
         await invite.save();
         return res.status(200).json({ success: true, message: "Member invited successfully" });
     } catch (error) {
         console.error("Error in inviteMember:", error);
-        return res.status(500).json({ success: false, message: "Failed to invite member", error });
+        return res.status(500).json({ success: false, message: "Failed to invite member", error: error.message });
     }
 }
 
@@ -70,7 +93,7 @@ export const respondToInvite = async(req, res) => {
 export const getBoardByUser = async(req, res) => {
     try {
         const userId = req.user._id
-        const response = await Board.find({createdBy: userId});
+        const response = await Membership.find({userId: userId}).populate('userId').populate('boardId');
         if(response){
             return res.status(200).json({
                 success: true,
@@ -91,9 +114,26 @@ export const getBoardById = async(req, res) => {
     try {
         const boardId = req.params.boardId;
         const board = await Board.findById(boardId).populate('createdBy').populate('companyId');
-        return res.status(200).json({ success: true, message: "Board fetched successfully", data: board });
+        const tasks = await Task.find({boardId: boardId}).populate('assignedTo');
+        const members = await Membership.find({boardId: boardId}).populate('userId');
+        return res.status(200).json({ success: true, message: "Board fetched successfully", 
+            boardData: board,
+            tasks: tasks,
+            members: members
+          });
     } catch (error) {
         console.error("Error in getBoardById:", error);
         return res.status(500).json({ success: false, message: "Failed to get board", error });
+    }
+}
+
+export const getMembersByBoardId = async(req, res) => {
+    try {
+        const boardId = req.params.boardId;
+        const members = await Membership.find({ boardId: boardId });
+        return res.status(200).json({ success: true, message: "Members fetched successfully", data: members });
+    } catch (error) {
+        console.error("Error in getMembersByBoardId:", error);
+        return res.status(500).json({ success: false, message: "Failed to get members", error });
     }
 }

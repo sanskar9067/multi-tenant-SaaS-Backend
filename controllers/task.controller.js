@@ -19,7 +19,7 @@ export const createTask = async (req, res) => {
             description,
             boardId: req.params.boardId,
             assignedTo,
-            priority
+            priority,
         });
         await newTask.save();
         res.status(201).json({ success: true, data: newTask });
@@ -51,6 +51,43 @@ export const getTasksByBoardId = async (req, res) => {
         return res.status(200).json({ success: true, data: tasks });
     } catch (error) {
         console.error("Error getting tasks:", error);
+        return res.status(500).json({ success: false, message: "Internal server error", error });
+    }
+};
+
+export const updateTaskStatus = async (req, res) => {
+    try {
+        const { taskId } = req.params;
+        const { status } = req.body;
+        const validStatuses = ["To Do", "In Progress", "Done"];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({ success: false, message: "Invalid status value" });
+        }
+        const updatedTask = await Task.findByIdAndUpdate(
+            taskId,
+            { status },
+            { new: true }
+        );
+        if (!updatedTask) {
+            return res.status(404).json({ success: false, message: "Task not found" });
+        }
+        return res.status(200).json({ success: true, data: updatedTask });
+    } catch (error) {
+        console.error("Error updating task status:", error);
+        return res.status(500).json({ success: false, message: "Internal server error", error });
+    }
+};
+
+export const deleteTask = async (req, res) => {
+    try {
+        const { taskId } = req.params;
+        const deletedTask = await Task.findByIdAndDelete(taskId);
+        if (!deletedTask) {
+            return res.status(404).json({ success: false, message: "Task not found" });
+        }
+        return res.status(200).json({ success: true, message: "Task deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting task:", error);
         return res.status(500).json({ success: false, message: "Internal server error", error });
     }
 };
