@@ -2,6 +2,7 @@ import {Router} from 'express';
 import { createBoard, getBoardByUser, inviteMember, respondToInvite, getBoardById, getMembersByBoardId } from '../controllers/board.controller.js';
 import verifyOwnerMiddleware from '../middleware/owner.middleware.js';
 import verifyAuthMiddleware from '../middleware/auth.middleware.js';
+import {getInvites} from '../controllers/invite.controller.js';
 
 const router = Router();
 
@@ -11,5 +12,5 @@ router.post("/respond-invite", verifyAuthMiddleware, respondToInvite);
 router.get("/get-boards", verifyAuthMiddleware, getBoardByUser);
 router.get("/get-board/:boardId", verifyAuthMiddleware, getBoardById);
 router.get("/get-members/:boardId", verifyAuthMiddleware, getMembersByBoardId);
-
+router.get("/get-invites", verifyAuthMiddleware, getInvites);
 export default router;

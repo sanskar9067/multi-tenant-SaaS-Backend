@@ -21,8 +21,10 @@ connectDB();
 
 const io = new Server(server, {
   cors: {
-    origin: "*"
-  }
+    origin: "*",
+    credentials: true
+  },
+  transports: ['websocket', 'polling']
 })
 
 app.use(express.json());
@@ -41,7 +43,12 @@ app.get("/", (req, res) => {
 io.on("connection", (socket) => {
   console.log(`User Connected: ${socket.id}`)
 
-  socket.on("update-task-status", async ({ taskId, newStatus }) => {
+  socket.on("join-board", (boardId) => {
+    socket.join(boardId);
+    console.log(`User ${socket.id} joined board ${boardId}`);
+  });
+
+  socket.on("update-task-status", async ({ taskId, boardId }) => {
     const response = await Task.findById(taskId).populate("assignedTo").populate("boardId");
     if (response.status === "To Do") {
       response.status = "In Progress";
@@ -52,7 +59,7 @@ io.on("connection", (socket) => {
       await response.save();
     }
     console.log(response);
-    io.emit("task-updated", response);
+    socket.to(boardId).emit("task-updated", response);
   })
 
   socket.on("delete-task", async ({ taskId, boardId }) => {
@@ -64,7 +71,7 @@ io.on("connection", (socket) => {
 
       if (!deletedTask) return;
 
-      io.emit("task-deleted", {
+      socket.to(boardId).emit("task-deleted", {
         taskId
       });
 
@@ -85,8 +92,8 @@ io.on("connection", (socket) => {
       const populatedTask = await Task.findById(newTask._id)
         .populate("assignedTo", "name email");
 
-      // 🔥 Emit to everyone in the board
-      io.emit("task-created", populatedTask);
+      // Emit to everyone in the board
+      socket.to(boardId).emit("task-created", populatedTask);
 
     } catch (err) {
       console.error(err);
@@ -101,6 +108,6 @@ io.on("connection", (socket) => {
   })
 })
 
-server.listen(PORT, () => {
+server.listen(PORT, "0.0.0.0", () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });

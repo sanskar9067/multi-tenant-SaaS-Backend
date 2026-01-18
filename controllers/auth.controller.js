@@ -2,7 +2,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/user.model.js";
 import client from "../utils/redisClient.js";
-//import transporter from "../utils/nodemailer.js";
+import transporter from "../utils/nodemailer.js";
 
 const generateTokens = async(userId) => {
     const payload = await User.findById(userId).select("-password");
@@ -45,12 +45,12 @@ export const signUpUser = async(req, res) => {
 
         await client.setEx(`user_${email}`, 600, JSON.stringify(newUser))
 
-        /*transporter.sendMail({
+        transporter.sendMail({
             from: process.env.GMAIL_ID,
             to: email,
-            subject: "OTP",
-            html: `<div>OTP</div>`
-        })*/
+            subject: `OTP: ${otp}`,
+            html: `<div>OTP: ${otp}</div>`
+        })
 
         res.status(201).json({
             success: true,
